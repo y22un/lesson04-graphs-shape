@@ -2,6 +2,10 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
+
+# --------------------------------------------------
+# 기본 설정
+# --------------------------------------------------
 st.set_page_config(
     page_title="영화 데이터 그래프 도감 2 - 분포와 관계",
     layout="wide"
@@ -9,6 +13,10 @@ st.set_page_config(
 
 st.title("🎬 영화 데이터 그래프 도감 2 - 분포와 관계")
 
+
+# --------------------------------------------------
+# 데이터 불러오기
+# --------------------------------------------------
 DATA_URL = "https://raw.githubusercontent.com/happykth/data/main/kobis_movies.csv"
 
 
@@ -16,12 +24,14 @@ DATA_URL = "https://raw.githubusercontent.com/happykth/data/main/kobis_movies.cs
 def load_data():
     df = pd.read_csv(DATA_URL)
 
+    # 개봉일 변환
     df["openDt"] = pd.to_datetime(
         df["openDt"].astype(str),
         format="%Y%m%d",
         errors="coerce"
     )
 
+    # 여러 장르가 있는 경우 첫 번째 장르만 사용
     df["genre"] = (
         df["genre"]
         .fillna("알 수 없음")
@@ -31,23 +41,21 @@ def load_data():
         .str.strip()
     )
 
+    # 숫자형 데이터 변환
     numeric_columns = [
         "movieCd",
         "first_scrn",
         "first_show",
         "first_week_audi",
         "total_audi",
-        "days_in_top10",
-        "in_top10",
-        "nation_audi"
+        "days_in_top10"
     ]
 
     for column in numeric_columns:
-        if column in df.columns:
-            df[column] = pd.to_numeric(
-                df[column],
-                errors="coerce"
-            )
+        df[column] = pd.to_numeric(
+            df[column],
+            errors="coerce"
+        )
 
     return df
 
@@ -62,8 +70,14 @@ st.caption(f"분석 대상 영화: {len(df):,}편")
 # ==================================================
 st.header("📊 그래프 1. 장르별 영화 편수")
 
-genre_count = df["genre"].value_counts().reset_index()
+genre_count = (
+    df["genre"]
+    .value_counts()
+    .reset_index()
+)
+
 genre_count.columns = ["장르", "영화 편수"]
+
 
 fig1 = px.pie(
     genre_count,
@@ -117,6 +131,7 @@ treemap_data = treemap_data[
     treemap_data["total_audi"] > 0
 ]
 
+
 fig2 = px.treemap(
     treemap_data,
     path=["genre", "movieNm"],
@@ -145,7 +160,7 @@ st.info(
 
 
 # ==================================================
-# 그래프 3. 영화별 총 관객 수 분포
+# 그래프 3. 총 관객 수 분포
 # ==================================================
 st.header("📊 그래프 3. 영화별 총 관객 수 분포")
 
@@ -160,6 +175,7 @@ histogram_data = histogram_data.dropna(
 histogram_data = histogram_data[
     histogram_data["total_audi"] > 0
 ]
+
 
 fig3 = px.histogram(
     histogram_data,
@@ -190,6 +206,8 @@ st.plotly_chart(
     use_container_width=True
 )
 
+
+# 가장 많이 몰려 있는 구간 계산
 bin_counts = pd.cut(
     histogram_data["total_audi"],
     bins=20
@@ -200,12 +218,15 @@ most_common_bin = bin_counts.idxmax()
 range_start = int(most_common_bin.left)
 range_end = int(most_common_bin.right)
 
+
+# 총 관객이 가장 많은 영화 찾기
 max_audience_row = histogram_data.loc[
     histogram_data["total_audi"].idxmax()
 ]
 
 max_movie_name = max_audience_row["movieNm"]
 max_audience = int(max_audience_row["total_audi"])
+
 
 st.info(
     f"이 그래프로 알 수 있는 것: "
@@ -226,18 +247,14 @@ scatter_data = df[
 ].copy()
 
 scatter_data = scatter_data.dropna(
-    subset=[
-        "movieNm",
-        "genre",
-        "first_scrn",
-        "total_audi"
-    ]
+    subset=["movieNm", "genre", "first_scrn", "total_audi"]
 )
 
 scatter_data = scatter_data[
     (scatter_data["first_scrn"] > 0)
     & (scatter_data["total_audi"] > 0)
 ]
+
 
 fig4 = px.scatter(
     scatter_data,
@@ -281,15 +298,20 @@ st.info(
 
 
 # ==================================================
-# 그래프 5. 장르별 총 관객 수 분포
+# 그래프 5. 장르별 총 관객 수 박스플롯
 # ==================================================
 st.header("📊 그래프 5. 장르별 총 관객 수 분포")
 
-genre_counts = df["genre"].value_counts()
+# 영화가 10편 이상인 장르 찾기
+genre_counts = (
+    df["genre"]
+    .value_counts()
+)
 
 selected_genres = genre_counts[
     genre_counts >= 10
 ].index
+
 
 boxplot_data = df[
     df["genre"].isin(selected_genres)
@@ -298,16 +320,13 @@ boxplot_data = df[
 ].copy()
 
 boxplot_data = boxplot_data.dropna(
-    subset=[
-        "genre",
-        "movieNm",
-        "total_audi"
-    ]
+    subset=["genre", "movieNm", "total_audi"]
 )
 
 boxplot_data = boxplot_data[
     boxplot_data["total_audi"] > 0
 ]
+
 
 fig5 = px.box(
     boxplot_data,
@@ -348,7 +367,7 @@ st.info(
 
 
 # ==================================================
-# 그래프 6. 개봉일 스크린 수와 총 관객의 관계 - 버블 그래프
+# 그래프 6. 개봉일 스크린 수와 총 관객의 버블 그래프
 # ==================================================
 st.header("📊 그래프 6. 개봉일 스크린 수와 총 관객의 관계 - 버블 그래프")
 
@@ -362,6 +381,7 @@ bubble_data = df[
     ]
 ].copy()
 
+# 필요한 데이터가 없는 행 제거
 bubble_data = bubble_data.dropna(
     subset=[
         "movieNm",
@@ -372,11 +392,13 @@ bubble_data = bubble_data.dropna(
     ]
 )
 
+# 0 이하의 값 제거
 bubble_data = bubble_data[
     (bubble_data["first_scrn"] > 0)
     & (bubble_data["total_audi"] > 0)
     & (bubble_data["first_week_audi"] > 0)
 ]
+
 
 fig6 = px.scatter(
     bubble_data,
@@ -432,10 +454,12 @@ sunburst_data = df[
     ["nation", "genre"]
 ].copy()
 
+# 제작 국가와 장르가 없는 데이터 제거
 sunburst_data = sunburst_data.dropna(
     subset=["nation", "genre"]
 )
 
+# 문자열로 변환하고 앞뒤 공백 제거
 sunburst_data["nation"] = (
     sunburst_data["nation"]
     .astype(str)
@@ -448,17 +472,21 @@ sunburst_data["genre"] = (
     .str.strip()
 )
 
+# 빈 값 제거
 sunburst_data = sunburst_data[
     (sunburst_data["nation"] != "")
     & (sunburst_data["genre"] != "")
 ]
 
+
+# 국가 × 장르별 영화 편수 계산
 sunburst_count = (
     sunburst_data
     .groupby(["nation", "genre"])
     .size()
     .reset_index(name="영화 편수")
 )
+
 
 fig7 = px.sunburst(
     sunburst_count,
@@ -496,37 +524,45 @@ st.info(
 )
 
 
+
+
 # ==================================================
-# 그래프 8. 10위권에 있는 관객 국적은 어는 나라가 많은
+# 그래프 8. 10위권에 있는 어느 나라의 영화가 많은가
 # ==================================================
-st.header("📊 그래프 8. 10위권에 있는 관객 국적은 어는 나라가 많은")
+st.header("📊 그래프 8. 10위권에 있는 어느 나라의 영화가 많은가")
 
 scatter8_data = df[
-    ["movieNm", "in_top10", "nation_audi"]
+    ["movieNm", "in_top10", "nation_movie"]
 ].copy()
 
 scatter8_data = scatter8_data.dropna(
     subset=[
         "movieNm",
         "in_top10",
-        "nation_audi"
+        "nation_movie"
     ]
 )
 
+# 국가 이름을 범주형 데이터로 변환
+scatter8_data["nation_movie"] = (
+    scatter8_data["nation_movie"]
+    .astype(str)
+    .str.strip()
+)
+
 scatter8_data = scatter8_data[
-    (scatter8_data["in_top10"] >= 0)
-    & (scatter8_data["nation_audi"] >= 0)
+    (scatter8_data["nation_movie"] != "")
 ]
 
 fig8 = px.scatter(
     scatter8_data,
     x="in_top10",
-    y="nation_audi",
+    y="nation_movie",
     hover_name="movieNm",
-    title="10위권에 있는 관객 국적은 어는 나라가 많은",
+    title="10위권에 있는 어느 나라의 영화가 많은가",
     labels={
         "in_top10": "10위권",
-        "nation_audi": "관객 국적"
+        "nation_movie": "영화 제작 국가"
     }
 )
 
@@ -534,14 +570,17 @@ fig8.update_traces(
     hovertemplate=(
         "영화명: %{hovertext}<br>"
         "10위권: %{x}<br>"
-        "관객 국적: %{y}"
+        "영화 제작 국가: %{y}"
         "<extra></extra>"
     )
 )
 
 fig8.update_layout(
     xaxis_title="10위권",
-    yaxis_title="관객 국적"
+    yaxis_title="영화 제작 국가",
+    yaxis={
+        "type": "category"
+    }
 )
 
 st.plotly_chart(
@@ -551,6 +590,6 @@ st.plotly_chart(
 
 st.info(
     "이 그래프로 알 수 있는 것: "
-    "영화가 10위권에 머문 정도와 관객 국적 데이터가 "
-    "어떤 관계를 보이는지 영화별로 비교할 수 있습니다."
+    "10위권에 머문 기간과 영화 제작 국가를 함께 살펴보면서 "
+    "어느 나라의 영화가 10위권에 많이 포함되었는지 비교할 수 있습니다."
 )
