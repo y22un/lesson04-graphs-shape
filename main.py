@@ -525,34 +525,35 @@ st.info(
 
 
 
+```python
 # ==================================================
 # 그래프 8. 10위권에 어떤 나라의 영화가 많이 포함되었을까?
 # ==================================================
 st.header("📊 그래프 8. 10위권에 어떤 나라의 영화가 많이 포함되었을까?")
 
 nation_count_data = df[
-    ["movieNm", "nation_movie"]
+    ["movieNm", "nation"]
 ].copy()
 
-# 국가 정보가 없는 데이터 제거
+# 제작 국가가 없는 데이터 제거
 nation_count_data = nation_count_data.dropna(
-    subset=["movieNm", "nation_movie"]
+    subset=["movieNm", "nation"]
 )
 
 # 국가 이름 정리
-nation_count_data["nation_movie"] = (
-    nation_count_data["nation_movie"]
+nation_count_data["nation"] = (
+    nation_count_data["nation"]
     .astype(str)
     .str.strip()
 )
 
 nation_count_data = nation_count_data[
-    nation_count_data["nation_movie"] != ""
+    nation_count_data["nation"] != ""
 ]
 
 # 국가별 영화 편수 계산
 nation_count = (
-    nation_count_data["nation_movie"]
+    nation_count_data["nation"]
     .value_counts()
     .reset_index()
 )
@@ -603,3 +604,4 @@ st.info(
     "10위권에 포함된 영화의 제작 국가별 편수를 비교하여 "
     "어느 나라의 영화가 많이 포함되었는지 살펴볼 수 있습니다."
 )
+```
