@@ -246,12 +246,10 @@ scatter_data = df[
     ["movieNm", "genre", "first_scrn", "total_audi"]
 ].copy()
 
-# 필요한 데이터가 없는 행 제거
 scatter_data = scatter_data.dropna(
     subset=["movieNm", "genre", "first_scrn", "total_audi"]
 )
 
-# 스크린 수와 총 관객이 0 이하인 데이터 제거
 scatter_data = scatter_data[
     (scatter_data["first_scrn"] > 0)
     & (scatter_data["total_audi"] > 0)
@@ -296,4 +294,74 @@ st.info(
     "이 그래프로 알 수 있는 것: "
     "영화의 개봉일 스크린 수와 총 관객 수가 어떤 관계를 보이는지, "
     "그리고 장르별 영화들이 어느 위치에 분포하는지 살펴볼 수 있습니다."
+)
+
+
+# ==================================================
+# 그래프 5. 장르별 총 관객 수 박스플롯
+# ==================================================
+st.header("📊 그래프 5. 장르별 총 관객 수 분포")
+
+# 영화가 10편 이상인 장르 찾기
+genre_counts = (
+    df["genre"]
+    .value_counts()
+)
+
+selected_genres = genre_counts[
+    genre_counts >= 10
+].index
+
+
+boxplot_data = df[
+    df["genre"].isin(selected_genres)
+][
+    ["genre", "movieNm", "total_audi"]
+].copy()
+
+# 필요한 데이터 제거
+boxplot_data = boxplot_data.dropna(
+    subset=["genre", "movieNm", "total_audi"]
+)
+
+boxplot_data = boxplot_data[
+    boxplot_data["total_audi"] > 0
+]
+
+
+fig5 = px.box(
+    boxplot_data,
+    x="genre",
+    y="total_audi",
+    points="outliers",
+    hover_name="movieNm",
+    title="영화가 10편 이상인 장르의 총 관객 수 분포",
+    labels={
+        "genre": "장르",
+        "total_audi": "총 관객 수"
+    }
+)
+
+fig5.update_traces(
+    hovertemplate=(
+        "영화명: %{hovertext}<br>"
+        "총 관객: %{y:,}명"
+        "<extra></extra>"
+    )
+)
+
+fig5.update_layout(
+    xaxis_title="장르",
+    yaxis_title="총 관객 수"
+)
+
+st.plotly_chart(
+    fig5,
+    use_container_width=True
+)
+
+st.info(
+    "이 그래프로 알 수 있는 것: "
+    "영화가 10편 이상인 장르에서 총 관객 수가 어떻게 분포하는지와 "
+    "일반적인 범위에서 크게 벗어난 영화가 무엇인지 살펴볼 수 있습니다."
 )
