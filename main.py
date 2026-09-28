@@ -525,62 +525,72 @@ st.info(
 
 
 
-
 # ==================================================
-# 그래프 8. 10위권에 있는 어느 나라의 영화가 많은가
+# 그래프 8. 10위권에 어떤 나라의 영화가 많이 포함되었을까?
 # ==================================================
-st.header("📊 그래프 8. 10위권에 있는 어느 나라의 영화가 많은가")
+st.header("📊 그래프 8. 10위권에 어떤 나라의 영화가 많이 포함되었을까?")
 
-scatter8_data = df[
-    ["movieNm", "in_top10", "nation_movie"]
+nation_count_data = df[
+    ["movieNm", "nation_movie"]
 ].copy()
 
-scatter8_data = scatter8_data.dropna(
-    subset=[
-        "movieNm",
-        "in_top10",
-        "nation_movie"
-    ]
+# 국가 정보가 없는 데이터 제거
+nation_count_data = nation_count_data.dropna(
+    subset=["movieNm", "nation_movie"]
 )
 
-# 국가 이름을 범주형 데이터로 변환
-scatter8_data["nation_movie"] = (
-    scatter8_data["nation_movie"]
+# 국가 이름 정리
+nation_count_data["nation_movie"] = (
+    nation_count_data["nation_movie"]
     .astype(str)
     .str.strip()
 )
 
-scatter8_data = scatter8_data[
-    (scatter8_data["nation_movie"] != "")
+nation_count_data = nation_count_data[
+    nation_count_data["nation_movie"] != ""
 ]
 
-fig8 = px.scatter(
-    scatter8_data,
-    x="in_top10",
-    y="nation_movie",
-    hover_name="movieNm",
-    title="10위권에 있는 어느 나라의 영화가 많은가",
+# 국가별 영화 편수 계산
+nation_count = (
+    nation_count_data["nation_movie"]
+    .value_counts()
+    .reset_index()
+)
+
+nation_count.columns = [
+    "제작 국가",
+    "영화 편수"
+]
+
+# 영화 편수가 많은 국가부터 표시
+nation_count = nation_count.sort_values(
+    "영화 편수",
+    ascending=False
+)
+
+fig8 = px.bar(
+    nation_count,
+    x="제작 국가",
+    y="영화 편수",
+    title="10위권에 어떤 나라의 영화가 많이 포함되었을까?",
     labels={
-        "in_top10": "10위권",
-        "nation_movie": "영화 제작 국가"
-    }
+        "제작 국가": "영화 제작 국가",
+        "영화 편수": "영화 편수"
+    },
+    text="영화 편수"
 )
 
 fig8.update_traces(
     hovertemplate=(
-        "영화명: %{hovertext}<br>"
-        "10위권: %{x}<br>"
-        "영화 제작 국가: %{y}"
+        "제작 국가: %{x}<br>"
+        "영화 편수: %{y}편"
         "<extra></extra>"
     )
 )
 
 fig8.update_layout(
-    xaxis_title="10위권",
-    yaxis_title="영화 제작 국가",
-    yaxis={
-        "type": "category"
-    }
+    xaxis_title="영화 제작 국가",
+    yaxis_title="영화 편수"
 )
 
 st.plotly_chart(
@@ -590,6 +600,6 @@ st.plotly_chart(
 
 st.info(
     "이 그래프로 알 수 있는 것: "
-    "10위권에 머문 기간과 영화 제작 국가를 함께 살펴보면서 "
-    "어느 나라의 영화가 10위권에 많이 포함되었는지 비교할 수 있습니다."
+    "10위권에 포함된 영화의 제작 국가별 편수를 비교하여 "
+    "어느 나라의 영화가 많이 포함되었는지 살펴볼 수 있습니다."
 )
