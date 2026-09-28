@@ -319,7 +319,6 @@ boxplot_data = df[
     ["genre", "movieNm", "total_audi"]
 ].copy()
 
-# 필요한 데이터 제거
 boxplot_data = boxplot_data.dropna(
     subset=["genre", "movieNm", "total_audi"]
 )
@@ -364,4 +363,161 @@ st.info(
     "이 그래프로 알 수 있는 것: "
     "영화가 10편 이상인 장르에서 총 관객 수가 어떻게 분포하는지와 "
     "일반적인 범위에서 크게 벗어난 영화가 무엇인지 살펴볼 수 있습니다."
+)
+
+
+# ==================================================
+# 그래프 6. 개봉일 스크린 수와 총 관객의 버블 그래프
+# ==================================================
+st.header("📊 그래프 6. 개봉일 스크린 수와 총 관객의 관계 - 버블 그래프")
+
+bubble_data = df[
+    [
+        "movieNm",
+        "genre",
+        "first_scrn",
+        "total_audi",
+        "first_week_audi"
+    ]
+].copy()
+
+# 필요한 데이터가 없는 행 제거
+bubble_data = bubble_data.dropna(
+    subset=[
+        "movieNm",
+        "genre",
+        "first_scrn",
+        "total_audi",
+        "first_week_audi"
+    ]
+)
+
+# 0 이하의 값 제거
+bubble_data = bubble_data[
+    (bubble_data["first_scrn"] > 0)
+    & (bubble_data["total_audi"] > 0)
+    & (bubble_data["first_week_audi"] > 0)
+]
+
+
+fig6 = px.scatter(
+    bubble_data,
+    x="first_scrn",
+    y="total_audi",
+    size="first_week_audi",
+    color="genre",
+    hover_name="movieNm",
+    size_max=45,
+    title="개봉일 스크린 수와 총 관객의 관계 - 첫 주 관객을 크기로 표현",
+    labels={
+        "first_scrn": "개봉일 스크린 수",
+        "total_audi": "총 관객 수",
+        "first_week_audi": "첫 주 관객",
+        "genre": "장르"
+    }
+)
+
+fig6.update_traces(
+    hovertemplate=(
+        "영화명: %{hovertext}<br>"
+        "개봉일 스크린 수: %{x:,}개<br>"
+        "총 관객: %{y:,}명<br>"
+        "첫 주 관객: %{marker.size:,}명"
+        "<extra></extra>"
+    )
+)
+
+fig6.update_layout(
+    xaxis_title="개봉일 스크린 수",
+    yaxis_title="총 관객 수",
+    legend_title="장르"
+)
+
+st.plotly_chart(
+    fig6,
+    use_container_width=True
+)
+
+st.info(
+    "이 그래프로 알 수 있는 것: "
+    "개봉일 스크린 수와 총 관객 수의 관계를 살펴보면서, "
+    "첫 주 관객이 많은 영화가 어떤 위치에 분포하는지도 함께 확인할 수 있습니다."
+)
+
+# ==================================================
+# 그래프 7. 제작 국가 → 장르 선버스트
+# ==================================================
+st.header("📊 그래프 7. 제작 국가와 장르의 관계")
+
+sunburst_data = df[
+    ["nation", "genre"]
+].copy()
+
+# 제작 국가와 장르가 없는 데이터 제거
+sunburst_data = sunburst_data.dropna(
+    subset=["nation", "genre"]
+)
+
+# 문자열로 변환하고 앞뒤 공백 제거
+sunburst_data["nation"] = (
+    sunburst_data["nation"]
+    .astype(str)
+    .str.strip()
+)
+
+sunburst_data["genre"] = (
+    sunburst_data["genre"]
+    .astype(str)
+    .str.strip()
+)
+
+# 빈 값 제거
+sunburst_data = sunburst_data[
+    (sunburst_data["nation"] != "")
+    & (sunburst_data["genre"] != "")
+]
+
+
+# 국가 × 장르별 영화 편수 계산
+sunburst_count = (
+    sunburst_data
+    .groupby(["nation", "genre"])
+    .size()
+    .reset_index(name="영화 편수")
+)
+
+
+fig7 = px.sunburst(
+    sunburst_count,
+    path=["nation", "genre"],
+    values="영화 편수",
+    title="제작 국가 → 장르별 영화 편수"
+)
+
+fig7.update_traces(
+    hovertemplate=(
+        "%{label}<br>"
+        "영화 편수: %{value}편"
+        "<extra></extra>"
+    )
+)
+
+fig7.update_layout(
+    margin=dict(
+        t=60,
+        l=10,
+        r=10,
+        b=10
+    )
+)
+
+st.plotly_chart(
+    fig7,
+    use_container_width=True
+)
+
+st.info(
+    "이 그래프로 알 수 있는 것: "
+    "제작 국가별로 어떤 장르의 영화가 많이 만들어졌는지와 "
+    "각 국가와 장르가 전체 영화에서 차지하는 비중을 살펴볼 수 있습니다."
 )
