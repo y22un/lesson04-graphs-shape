@@ -62,7 +62,6 @@ def load_data():
 
 df = load_data()
 
-
 st.caption(f"분석 대상 영화: {len(df):,}편")
 
 
@@ -208,9 +207,7 @@ st.plotly_chart(
 )
 
 
-# --------------------------------------------------
-# 대부분의 영화가 몰려 있는 구간 계산
-# --------------------------------------------------
+# 가장 많이 몰려 있는 구간 계산
 bin_counts = pd.cut(
     histogram_data["total_audi"],
     bins=20
@@ -222,9 +219,7 @@ range_start = int(most_common_bin.left)
 range_end = int(most_common_bin.right)
 
 
-# --------------------------------------------------
 # 총 관객이 가장 많은 영화 찾기
-# --------------------------------------------------
 max_audience_row = histogram_data.loc[
     histogram_data["total_audi"].idxmax()
 ]
@@ -239,4 +234,66 @@ st.info(
     f"{range_end:,}명 구간에 몰려 있습니다. "
     f"총 관객이 가장 많은 영화는 **{max_movie_name}**이며, "
     f"총 관객은 **{max_audience:,}명**입니다."
+)
+
+
+# ==================================================
+# 그래프 4. 개봉일 스크린 수와 총 관객의 관계
+# ==================================================
+st.header("📊 그래프 4. 개봉일 스크린 수와 총 관객의 관계")
+
+scatter_data = df[
+    ["movieNm", "genre", "first_scrn", "total_audi"]
+].copy()
+
+# 필요한 데이터가 없는 행 제거
+scatter_data = scatter_data.dropna(
+    subset=["movieNm", "genre", "first_scrn", "total_audi"]
+)
+
+# 스크린 수와 총 관객이 0 이하인 데이터 제거
+scatter_data = scatter_data[
+    (scatter_data["first_scrn"] > 0)
+    & (scatter_data["total_audi"] > 0)
+]
+
+
+fig4 = px.scatter(
+    scatter_data,
+    x="first_scrn",
+    y="total_audi",
+    color="genre",
+    hover_name="movieNm",
+    title="개봉일 스크린 수와 총 관객의 관계",
+    labels={
+        "first_scrn": "개봉일 스크린 수",
+        "total_audi": "총 관객 수",
+        "genre": "장르"
+    }
+)
+
+fig4.update_traces(
+    hovertemplate=(
+        "영화명: %{hovertext}<br>"
+        "개봉일 스크린 수: %{x:,}개<br>"
+        "총 관객: %{y:,}명"
+        "<extra></extra>"
+    )
+)
+
+fig4.update_layout(
+    xaxis_title="개봉일 스크린 수",
+    yaxis_title="총 관객 수",
+    legend_title="장르"
+)
+
+st.plotly_chart(
+    fig4,
+    use_container_width=True
+)
+
+st.info(
+    "이 그래프로 알 수 있는 것: "
+    "영화의 개봉일 스크린 수와 총 관객 수가 어떤 관계를 보이는지, "
+    "그리고 장르별 영화들이 어느 위치에 분포하는지 살펴볼 수 있습니다."
 )
